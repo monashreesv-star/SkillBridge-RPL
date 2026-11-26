@@ -22,6 +22,8 @@ export interface KnowledgeQuestion {
   options_ta?: string[];
   audio_ta?: string;
   audio_hi?: string;
+  audio_script_ta?: string;
+  audio_script_hi?: string;
 }
 
 export interface QualificationPack {

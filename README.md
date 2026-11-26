@@ -3,7 +3,7 @@
 [![NSQF RPL Aligned](https://img.shields.io/badge/NSQF-Level%203%20%26%204%20Aligned-indigo)](https://www.nsqf.gov.in/)
 [![AI Engine](https://img.shields.io/badge/AI-Google%20Gemini%201.5%20Flash-emerald)](https://deepmind.google/technologies/gemini/)
 [![Offline First](https://img.shields.io/badge/Offline--First-PWA%20Queue-amber)](https://github.com/monashreesv-star/SkillBridge-RPL)
-[![Tests](https://img.shields.io/badge/Tests-26%2F26%20Passing-brightgreen)](https://vitest.dev/)
+[![Tests](https://img.shields.io/badge/Tests-27%2F27%20Passing-brightgreen)](https://vitest.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-lightgrey)](LICENSE)
 
@@ -98,7 +98,7 @@ SkillBridge RPL is built around three foundational architectural principles:
 
 - **Frontend**: React 18, TypeScript (Strict Mode), Tailwind CSS, Lucide Icons
 - **Build & Bundler**: Vite 5
-- **Testing**: Vitest, React Testing Library, JSDOM (26 tests passing)
+- **Testing**: Vitest, React Testing Library, JSDOM (27 tests passing)
 - **AI Integration**: Google Gemini 1.5 Flash REST API + Local Deterministic Engine
 - **Voice & Accessibility**: Web Speech API + Indian Phonetic Transliteration Engine + Live Caption Region
 - **Security**: Client-side XSS sanitization, MIME validation, 5MB file upload limit, SHA-256 certificate hashing
@@ -128,7 +128,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ```bash
 npm test
 ```
-Executes all 26 unit and integration tests across 7 test suites.
+Executes all 27 unit and integration tests across 7 test suites.
 
 ### Build for Production
 ```bash
@@ -143,7 +143,7 @@ Compiles TypeScript and creates optimized production assets in `dist/` (0 errors
 - **Repository**: Public ([https://github.com/monashreesv-star/SkillBridge-RPL](https://github.com/monashreesv-star/SkillBridge-RPL))
 - **Repository Size**: **0.50 MB** (limit: < 10 MB)
 - **Branch**: Exactly 1 branch (`main`)
-- **Tests Passed**: 26 / 26 (100% pass rate)
+- **Tests Passed**: 27 / 27 (100% pass rate)
 - **Build Status**: Succeeded in 9.29s (Clean TypeScript)
 
 ---

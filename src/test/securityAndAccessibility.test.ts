@@ -76,9 +76,47 @@ describe('SpeechService & Multi-Language Accessibility', () => {
   });
 
   it('supports voice lookup and safe speech fallback for Tamil, Hindi, and English', () => {
-    // Calling speak with Tamil text handles gracefully without throwing
-    expect(() => SpeechService.speak('டெஸ்ட்', 'ta')).not.toThrow();
-    expect(() => SpeechService.speak('परीक्षण', 'hi')).not.toThrow();
+    // Calling speak with Tamil text and fallback handles gracefully without throwing
+    expect(() =>
+      SpeechService.speak(
+        'கேள்வி ஒன்று',
+        'ta',
+        undefined,
+        'கேள்வி 1: சோதனை விளக்கம்',
+        'Kelvi onnu. Sodhanai vilakkam.'
+      )
+    ).not.toThrow();
+
+    expect(() =>
+      SpeechService.speak(
+        'प्रश्न एक',
+        'hi',
+        undefined,
+        'प्रश्न 1: परीक्षण विवरण',
+        'Prashna ek. Parikshan vivaran.'
+      )
+    ).not.toThrow();
+
     expect(() => SpeechService.stop()).not.toThrow();
+  });
+
+  it('guarantees all 5 Qualification Packs provide complete Tamil & Hindi question translations', async () => {
+    const { QUALIFICATION_PACKS } = await import('../data/qualificationPacks');
+    expect(QUALIFICATION_PACKS.length).toBe(5);
+
+    for (const qp of QUALIFICATION_PACKS) {
+      expect(qp.knowledgeQuestions.length).toBeGreaterThanOrEqual(3);
+      for (const q of qp.knowledgeQuestions) {
+        expect(q.question).toBeDefined();
+        expect(q.question_ta).toBeDefined();
+        expect(q.question_hi).toBeDefined();
+        expect(q.options_ta).toBeDefined();
+        expect(q.options_hi).toBeDefined();
+        expect(q.audio_ta).toBeDefined();
+        expect(q.audio_hi).toBeDefined();
+        expect(q.audio_script_ta).toBeDefined();
+        expect(q.audio_script_hi).toBeDefined();
+      }
+    }
   });
 });

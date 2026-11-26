@@ -145,11 +145,30 @@ class SpeechServiceImpl {
     }
   }
 
+  public getVoices(): SpeechSynthesisVoice[] {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
+    try {
+      const live = window.speechSynthesis.getVoices();
+      if (live && live.length > 0) {
+        this.cachedVoices = live;
+        this.isVoiceListLoaded = true;
+      }
+    } catch {
+      // ignore
+    }
+    return this.cachedVoices;
+  }
+
   private loadVoices(): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    this.cachedVoices = window.speechSynthesis.getVoices();
-    if (this.cachedVoices.length > 0) {
-      this.isVoiceListLoaded = true;
+    try {
+      const v = window.speechSynthesis.getVoices();
+      if (v && v.length > 0) {
+        this.cachedVoices = v;
+        this.isVoiceListLoaded = true;
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -196,64 +215,78 @@ class SpeechServiceImpl {
    * Finds a genuine native voice for Tamil or Hindi if available on the client device.
    */
   public findNativeVoice(lang: Language): SpeechSynthesisVoice | null {
-    if (this.cachedVoices.length === 0) {
-      this.loadVoices();
-    }
-    const voices = this.cachedVoices;
+    const voices = this.getVoices();
     if (voices.length === 0) return null;
 
     if (lang === 'ta') {
       return (
-        voices.find(
-          (v) =>
-            v.lang.toLowerCase().startsWith('ta') ||
-            v.name.toLowerCase().includes('tamil') ||
-            v.name.includes('தமிழ்') ||
-            v.name.toLowerCase().includes('valluvar')
-        ) || null
+        voices.find((v) => {
+          const l = (v.lang || '').toLowerCase().replace('_', '-');
+          const n = (v.name || '').toLowerCase();
+          return (
+            l === 'ta-in' ||
+            l === 'ta-lk' ||
+            l.startsWith('ta') ||
+            n.includes('tamil') ||
+            n.includes('தமிழ்') ||
+            n.includes('valluvar') ||
+            n.includes('iniyan') ||
+            n.includes('vani') ||
+            n.includes('latha') ||
+            n.includes('kavitha')
+          );
+        }) || null
       );
     }
 
     if (lang === 'hi') {
       return (
-        voices.find(
-          (v) =>
-            v.lang.toLowerCase().startsWith('hi') ||
-            v.name.toLowerCase().includes('hindi') ||
-            v.name.includes('हिन्दी') ||
-            v.name.toLowerCase().includes('hemant') ||
-            v.name.toLowerCase().includes('kalpana')
-        ) || null
+        voices.find((v) => {
+          const l = (v.lang || '').toLowerCase().replace('_', '-');
+          const n = (v.name || '').toLowerCase();
+          return (
+            l === 'hi-in' ||
+            l.startsWith('hi') ||
+            n.includes('hindi') ||
+            n.includes('हिन्दी') ||
+            n.includes('hemant') ||
+            n.includes('kalpana') ||
+            n.includes('madhur') ||
+            n.includes('swara')
+          );
+        }) || null
       );
     }
 
     // English
     return (
-      voices.find((v) => v.lang.toLowerCase() === 'en-in') ||
-      voices.find((v) => v.lang.toLowerCase().startsWith('en')) ||
+      voices.find((v) => (v.lang || '').toLowerCase() === 'en-in') ||
+      voices.find((v) => (v.lang || '').toLowerCase().startsWith('en')) ||
       null
     );
   }
 
   /**
-   * Finds an Indian accent voice (en-IN) which authenticates and pronounces Tamil & Hindi phonetics perfectly.
+   * Finds an Indian accent voice (en-IN) which authenticates and pronounces Tamil & Hindi phonetics clearly.
    */
   public findIndianVoice(): SpeechSynthesisVoice | null {
-    if (this.cachedVoices.length === 0) {
-      this.loadVoices();
-    }
-    const voices = this.cachedVoices;
+    const voices = this.getVoices();
     if (voices.length === 0) return null;
 
     return (
-      voices.find(
-        (v) =>
-          v.lang.toLowerCase() === 'en-in' ||
-          v.name.toLowerCase().includes('india') ||
-          v.name.toLowerCase().includes('ravi') ||
-          v.name.toLowerCase().includes('heera')
-      ) ||
-      voices.find((v) => v.lang.toLowerCase().startsWith('en')) ||
+      voices.find((v) => {
+        const l = (v.lang || '').toLowerCase().replace('_', '-');
+        const n = (v.name || '').toLowerCase();
+        return (
+          l === 'en-in' ||
+          n.includes('india') ||
+          n.includes('ravi') ||
+          n.includes('heera') ||
+          n.includes('neerja') ||
+          n.includes('prabhat')
+        );
+      }) ||
+      voices.find((v) => (v.lang || '').toLowerCase().startsWith('en')) ||
       voices[0] ||
       null
     );
@@ -268,7 +301,8 @@ class SpeechServiceImpl {
     text: string,
     lang: Language = 'en',
     onEnd?: () => void,
-    captionText?: string
+    captionText?: string,
+    fallbackPhoneticText?: string
   ): boolean {
     if (!this.isSupported() || !text.trim()) return false;
 
@@ -295,34 +329,60 @@ class SpeechServiceImpl {
       let textToVocalize = text;
       let voiceToUse = nativeVoice;
       let targetLang = 'en-IN';
+      let speechRate = 0.85;
 
       if (lang === 'ta') {
         if (nativeVoice) {
-          textToVocalize = captionText || text;
+          textToVocalize = (captionText || text)
+            .replace(/\(PTFE\)/gi, 'டெப்லான்')
+            .replace(/PTFE/gi, 'டெப்லான்')
+            .replace(/RCCB/gi, 'ஆர்.சி.சி.பி.')
+            .replace(/Voc/gi, 'வோல்டேஜ்')
+            .replace(/Isc/gi, 'கரண்ட்')
+            .replace(/sq\.mm/gi, 'சதுர மிமீ')
+            .replace(/P-trap/gi, 'பி ட்ராப்')
+            .replace(/S-trap/gi, 'எஸ் ட்ராப்')
+            .replace(/OBD-II/gi, 'ஓ பி டி இரண்டு')
+            .replace(/P0300/gi, 'பி 0 3 0 0')
+            .replace(/WHO/gi, 'உலக சுகாதார அமைப்பு');
           voiceToUse = nativeVoice;
           targetLang = 'ta-IN';
+          speechRate = 0.85;
         } else {
-          // Fall back to authentic Tamil phonetic pronunciation if text contains Tamil script
-          const hasTamilScript = /[\u0B80-\u0BFF]/.test(text);
-          textToVocalize = hasTamilScript ? convertTamilToPhonetic(text) : text;
+          // Fall back to clean, natural phonetic pronunciation when native Tamil voice pack is not on system
+          textToVocalize = fallbackPhoneticText || (
+            /[\u0B80-\u0BFF]/.test(text) ? convertTamilToPhonetic(text) : text
+          );
           voiceToUse = this.findIndianVoice();
           targetLang = 'en-IN';
+          speechRate = 0.80; // Slower cadence with distinct syllable timing for optimal comprehensibility
         }
       } else if (lang === 'hi') {
         if (nativeVoice) {
-          textToVocalize = captionText || text;
+          textToVocalize = (captionText || text)
+            .replace(/\(PTFE\)/gi, 'टेफ्लॉन')
+            .replace(/PTFE/gi, 'टेफ्लॉन')
+            .replace(/RCCB/gi, 'आर सी सी बी')
+            .replace(/Voc/gi, 'वोल्टेज')
+            .replace(/Isc/gi, 'करंट')
+            .replace(/P-trap/gi, 'पी ट्रैप')
+            .replace(/S-trap/gi, 'एस ट्रैप')
+            .replace(/WHO/gi, 'डब्ल्यू एच ओ');
           voiceToUse = nativeVoice;
           targetLang = 'hi-IN';
+          speechRate = 0.85;
         } else {
-          // Fall back to authentic Hindi phonetic pronunciation if text contains Devanagari script
-          const hasDevanagari = /[\u0900-\u097F]/.test(text);
-          textToVocalize = hasDevanagari ? convertHindiToPhonetic(text) : text;
+          textToVocalize = fallbackPhoneticText || (
+            /[\u0900-\u097F]/.test(text) ? convertHindiToPhonetic(text) : text
+          );
           voiceToUse = this.findIndianVoice();
           targetLang = 'en-IN';
+          speechRate = 0.80;
         }
       } else {
         voiceToUse = this.findIndianVoice() || nativeVoice;
         targetLang = 'en-IN';
+        speechRate = 0.88;
         textToVocalize = text
           .replace(/Voc\s*=\s*/gi, 'Voltage ')
           .replace(/Isc\s*=\s*/gi, 'Current ')
@@ -335,7 +395,7 @@ class SpeechServiceImpl {
         utterance.voice = voiceToUse;
       }
       utterance.lang = targetLang;
-      utterance.rate = 0.85; // Slightly slower pacing for high-clarity pronunciation
+      utterance.rate = speechRate;
       utterance.pitch = 1.0;
 
       utterance.onend = () => {

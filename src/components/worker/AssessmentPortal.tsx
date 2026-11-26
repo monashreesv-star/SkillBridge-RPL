@@ -69,19 +69,25 @@ export const AssessmentPortal: React.FC<AssessmentPortalProps> = ({
   const [submissionSuccess, setSubmissionSuccess] = useState<AssessmentSubmission | null>(null);
   const [evidenceSuccessMsg, setEvidenceSuccessMsg] = useState<string | null>(null);
 
-  const handleToggleSpeak = (qId: string, textToSpeak: string, captionText?: string) => {
+  const handleToggleSpeak = (
+    qId: string,
+    primaryText: string,
+    captionText?: string,
+    fallbackPhoneticText?: string
+  ) => {
     if (speakingQuestionId === qId) {
       SpeechService.stop();
       setSpeakingQuestionId(null);
     } else {
       setSpeakingQuestionId(qId);
       SpeechService.speak(
-        textToSpeak,
+        primaryText,
         lang,
         () => {
           setSpeakingQuestionId(null);
         },
-        captionText
+        captionText,
+        fallbackPhoneticText
       );
     }
   };
@@ -319,13 +325,25 @@ export const AssessmentPortal: React.FC<AssessmentPortalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const vocalText =
-                      lang === 'ta' && q.audio_ta
-                        ? q.audio_ta
-                        : lang === 'hi' && q.audio_hi
-                        ? q.audio_hi
-                        : `${qText}. ${qOptions.join(', ')}`;
-                    handleToggleSpeak(q.id, vocalText, `${qText}. ${qOptions.join(', ')}`);
+                    const numTamil = ['ஒன்று', 'இரண்டு', 'மூன்று', 'நான்கு', 'ஐந்து'][qIndex] || `${qIndex + 1}`;
+                    const optPrefixesTamil = ['விருப்பம் ஒன்று', 'விருப்பம் இரண்டு', 'விருப்பம் மூன்று', 'விருப்பம் நான்கு'];
+                    const spokenTamil =
+                      q.audio_script_ta ||
+                      `கேள்வி ${numTamil}: ${qText}. ${qOptions.map((opt, i) => `${optPrefixesTamil[i] || `விருப்பம் ${i + 1}`}: ${opt}`).join('. ')}.`;
+
+                    const numHindi = ['एक', 'दो', 'तीन', 'चार', 'पाँच'][qIndex] || `${qIndex + 1}`;
+                    const optPrefixesHindi = ['विकल्प एक', 'विकल्प दो', 'विकल्प तीन', 'विकल्प चार'];
+                    const spokenHindi =
+                      q.audio_script_hi ||
+                      `प्रश्न ${numHindi}: ${qText}. ${qOptions.map((opt, i) => `${optPrefixesHindi[i] || `विकल्प ${i + 1}`}: ${opt}`).join('. ')}.`;
+
+                    const spokenEnglish = `Question ${qIndex + 1}: ${q.question}. ${q.options.map((opt, i) => `Option ${i + 1}: ${opt}`).join('. ')}.`;
+
+                    const primaryText = lang === 'ta' ? spokenTamil : lang === 'hi' ? spokenHindi : spokenEnglish;
+                    const captionText = `${qText} — (${qOptions.map((opt, i) => `${i + 1}: ${opt}`).join(', ')})`;
+                    const fallbackPhonetic = lang === 'ta' ? q.audio_ta : lang === 'hi' ? q.audio_hi : undefined;
+
+                    handleToggleSpeak(q.id, primaryText, captionText, fallbackPhonetic);
                   }}
                   className={`flex-shrink-0 p-1.5 rounded-lg border transition-all flex items-center space-x-1 text-xs font-semibold ${
                     isSpeakingThis
